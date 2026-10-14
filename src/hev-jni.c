@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "hev-main.h"
+#include "optiv-capture.h"
 
 #include "hev-jni.h"
 
@@ -55,6 +56,9 @@ static jboolean native_start_service (JNIEnv *env, jobject thiz,
 static jboolean native_stop_service (JNIEnv *env, jobject thiz);
 static jboolean native_is_running (JNIEnv *env, jobject thiz);
 static jlongArray native_get_stats (JNIEnv *env, jobject thiz);
+static jboolean native_start_capture (JNIEnv *env, jobject thiz, jstring path,
+                                      jlong max_bytes);
+static void native_stop_capture (JNIEnv *env, jobject thiz);
 
 static JNINativeMethod native_methods[] = {
     { "TProxyStartService", "(Ljava/lang/String;I)Z",
@@ -62,6 +66,9 @@ static JNINativeMethod native_methods[] = {
     { "TProxyStopService", "()Z", (void *)native_stop_service },
     { "TProxyIsRunning", "()Z", (void *)native_is_running },
     { "TProxyGetStats", "()[J", (void *)native_get_stats },
+    { "TProxyStartCapture", "(Ljava/lang/String;J)Z",
+      (void *)native_start_capture },
+    { "TProxyStopCapture", "()V", (void *)native_stop_capture },
 };
 
 static void
@@ -208,6 +215,23 @@ native_get_stats (JNIEnv *env, jobject thiz)
     (*env)->SetLongArrayRegion (env, res, 0, 4, array);
 
     return res;
+}
+
+static jboolean
+native_start_capture (JNIEnv *env, jobject thiz, jstring path, jlong max_bytes)
+{
+    const char *value = (*env)->GetStringUTFChars (env, path, NULL);
+    int result;
+    if (!value) return JNI_FALSE;
+    result = optiv_capture_start (value, (size_t)max_bytes);
+    (*env)->ReleaseStringUTFChars (env, path, value);
+    return result ? JNI_TRUE : JNI_FALSE;
+}
+
+static void
+native_stop_capture (JNIEnv *env, jobject thiz)
+{
+    optiv_capture_stop ();
 }
 
 #endif /* ANDROID */

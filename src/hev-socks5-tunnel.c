@@ -43,6 +43,7 @@
 #include "hev-socks5-session-udp.h"
 
 #include "hev-socks5-tunnel.h"
+#include "optiv-capture.h"
 
 enum
 {
@@ -88,6 +89,7 @@ netif_output_handler (struct netif *netif, struct pbuf *p)
 {
     ssize_t s;
 
+    optiv_capture_packet (1, p);
     s = hev_tunnel_write (tun_fd, p);
     if (s <= 0) {
         if (errno == EAGAIN)
@@ -352,6 +354,7 @@ lwip_io_task_entry (void *data)
 
         stat_tx_packets++;
         stat_tx_bytes += buf->tot_len;
+        optiv_capture_packet (0, buf);
 
         data = buf->payload;
         if ((data[0] >> 4) == 4 ? (data[9] == IP_PROTO_UDP) :
