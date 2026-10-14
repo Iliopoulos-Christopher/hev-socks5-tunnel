@@ -29,6 +29,7 @@
 #include "hev-socks5-tunnel.h"
 
 #include "hev-socks5-session-udp.h"
+#include "optiv-flow.h"
 
 typedef struct _HevSocks5UDPFrame HevSocks5UDPFrame;
 
@@ -256,6 +257,8 @@ udp_recv_handler (void *arg, struct udp_pcb *pcb, struct pbuf *p,
         hev_socks5_session_terminate (HEV_SOCKS5_SESSION (self));
         return;
     }
+
+    optiv_flow_observe_udp (addr, port, &pcb->local_ip, pcb->local_port);
 
     if (self->frames > UDP_POOL_SIZE) {
         pbuf_free (p);

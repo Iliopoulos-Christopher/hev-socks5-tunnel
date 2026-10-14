@@ -26,6 +26,7 @@
 #include "hev-socks5-tunnel.h"
 
 #include "hev-socks5-session-tcp.h"
+#include "optiv-flow.h"
 
 static int
 task_io_yielder (HevTaskYieldType type, void *data)
@@ -184,6 +185,8 @@ hev_socks5_session_tcp_new (struct tcp_pcb *pcb, HevTaskMutex *mutex)
     HevSocks5SessionTCP *self;
     int res;
 
+    optiv_flow_observe_tcp (&pcb->remote_ip, pcb->remote_port,
+                            &pcb->local_ip, pcb->local_port);
     self = hev_malloc0 (sizeof (HevSocks5SessionTCP));
     if (!self)
         return NULL;

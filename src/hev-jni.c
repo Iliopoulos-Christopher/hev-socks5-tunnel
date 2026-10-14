@@ -20,6 +20,7 @@
 
 #include "hev-main.h"
 #include "optiv-capture.h"
+#include "optiv-flow.h"
 
 #include "hev-jni.h"
 
@@ -59,6 +60,8 @@ static jlongArray native_get_stats (JNIEnv *env, jobject thiz);
 static jboolean native_start_capture (JNIEnv *env, jobject thiz, jstring path,
                                       jlong max_bytes);
 static void native_stop_capture (JNIEnv *env, jobject thiz);
+static jobjectArray native_drain_flows (JNIEnv *env, jobject thiz);
+static jlong native_flow_drops (JNIEnv *env, jobject thiz);
 
 static JNINativeMethod native_methods[] = {
     { "TProxyStartService", "(Ljava/lang/String;I)Z",
@@ -69,6 +72,8 @@ static JNINativeMethod native_methods[] = {
     { "TProxyStartCapture", "(Ljava/lang/String;J)Z",
       (void *)native_start_capture },
     { "TProxyStopCapture", "()V", (void *)native_stop_capture },
+    { "TProxyDrainFlows", "()[Ljava/lang/String;", (void *)native_drain_flows },
+    { "TProxyFlowDrops", "()J", (void *)native_flow_drops },
 };
 
 static void
@@ -232,6 +237,32 @@ static void
 native_stop_capture (JNIEnv *env, jobject thiz)
 {
     optiv_capture_stop ();
+}
+
+static jobjectArray
+native_drain_flows (JNIEnv *env, jobject thiz)
+{
+    char events[128][192];
+    jclass string_class;
+    jobjectArray result;
+    size_t count, i;
+
+    count = optiv_flow_drain (events, 128);
+    string_class = (*env)->FindClass (env, "java/lang/String");
+    result = (*env)->NewObjectArray (env, count, string_class, NULL);
+    for (i = 0; i < count; i++) {
+        jstring value = (*env)->NewStringUTF (env, events[i]);
+        (*env)->SetObjectArrayElement (env, result, i, value);
+        (*env)->DeleteLocalRef (env, value);
+    }
+    (*env)->DeleteLocalRef (env, string_class);
+    return result;
+}
+
+static jlong
+native_flow_drops (JNIEnv *env, jobject thiz)
+{
+    return (jlong)optiv_flow_drops ();
 }
 
 #endif /* ANDROID */
